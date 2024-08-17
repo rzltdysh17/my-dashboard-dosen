@@ -1,0 +1,246 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Dosen {
+  id Int @id @default(autoincrement())
+  nama String 
+  nidn String @unique
+  jenjang_terakhir String
+  bidang_keahlian String
+  jabatan_akademik String
+
+  // relasi
+  akademik BimbinganAkademik[] @relation("AkademikDosen")
+  skripsi BimbinganSkripsi[] @relation("SkripsiDosen")
+  ujiSkripsi PengujiSkripsi[] @relation("PengujiDosen")
+  kkn BimbinganKKN[] @relation("KknDosen")
+  lomba BimbinganLomba[] @relation("LombaDosen")
+  kurikulum Kurikulum[] @relation("KurikulumDosen")
+  seminar Seminar[] @relation("SeminarDosen")
+  publikasi PublikasiJurnal[] @relation("PublikasiDosen")
+  penelitian Penelitian[] @relation("PenelitianDosen")
+  pengabdian Pengabdian[] @relation("PengabdianDosen")
+  kegiatanLuar KegiatanLuar[] @relation("KegiatanDosen")
+  penghargaan Penghargaan[] @relation("PenghargaanDosen")
+  sertifikat Sertifikat[] @relation("SertifikatDosen")
+  buku BukuBahanAjar[] @relation("BukuDosen")
+}
+
+model Mahasiswa {
+  nim Int @id @unique
+  nama String 
+  tahun_angkatan Int
+  status String
+
+  // relasi
+  akademik BimbinganAkademik[]  @relation("AkademikMahasiswa")
+  skripsi BimbinganSkripsi[] @relation("SkripsiMahasiswa")
+  ujiSkripsi PengujiSkripsi[] @relation("PengujiMahasiswa")
+  kkn BimbinganKKN[] @relation("KknMahasiswa")
+  lomba BimbinganLomba[] @relation("LombaMahasiswa")
+}
+
+model BimbinganAkademik {
+  id Int @id @default(autoincrement())
+  id_dosen Int
+  nim Int
+  tahun_masuk Int
+  tahun_selesai Int?
+  status String
+
+  // relasi dengan Mahasiswa dan Dosen
+  mahasiswa Mahasiswa @relation("AkademikMahasiswa", fields: [nim], references: [nim])
+  dosen Dosen @relation("AkademikDosen", fields: [id_dosen], references: [id])
+}
+
+model BimbinganSkripsi {
+  id Int @id @default(autoincrement())
+  id_dosen Int
+  nim Int
+  pembimbing Int
+  judul_skripsi String
+  status String
+
+  // relasi dengan Mahasiswa dan Dosen
+  mahasiswa Mahasiswa @relation("SkripsiMahasiswa", fields: [nim], references: [nim])
+  dosen Dosen @relation("SkripsiDosen", fields: [id_dosen], references: [id])
+}
+
+model PengujiSkripsi {
+  id Int @id @default(autoincrement())
+  id_dosen Int
+  nim Int
+  penguji Int
+  judul_skripsi String
+  status String
+
+  // relasi dengan Mahasiswa dan Dosen
+  mahasiswa Mahasiswa @relation("PengujiMahasiswa", fields: [nim], references: [nim])
+  dosen Dosen @relation("PengujiDosen", fields: [id_dosen], references: [id])
+}
+
+model BimbinganKKN {
+  id Int @id @default(autoincrement())
+  id_dosen Int
+  nim Int
+  pembimbing Int
+  judul_kkn String
+  lokasi String
+  durasi String
+  status String
+
+  // relasi dengan Mahasiswa dan Dosen
+  mahasiswa Mahasiswa @relation("KknMahasiswa", fields: [nim], references: [nim])
+  dosen Dosen @relation("KknDosen", fields: [id_dosen], references: [id])
+}
+
+model BimbinganLomba {
+  id Int @id @default(autoincrement())
+  id_dosen Int
+  nim Int
+  pembimbing Int
+  nama_Lomba String
+  jenis_Lomba String
+  tingkat_lomba String
+  lembaga String
+  tahun Int
+  juara String
+
+  // relasi dengan Mahasiswa dan Dosen
+  mahasiswa Mahasiswa @relation("LombaMahasiswa", fields: [nim], references: [nim])
+  dosen Dosen @relation("LombaDosen", fields: [id_dosen], references: [id])
+}
+
+model Kurikulum {
+  kode_matkul String @id @unique
+  id_dosen Int
+  semester Int
+  nama_matkul String
+  sks Int
+  metode_pembelajaran String
+
+  // relasi dengan Dosen
+  dosen Dosen @relation("KurikulumDosen", fields: [id_dosen], references: [id])
+}
+
+model Seminar {
+  id Int @id @default(autoincrement())
+  id_dosen Int
+  judul String
+  peran String
+  jenis_seminar String
+  lokasi String
+  tanggal DateTime
+  status String
+
+  // relasi dengan Dosen
+  dosen Dosen @relation("SeminarDosen", fields: [id_dosen], references: [id])
+}
+
+model PublikasiJurnal {
+  id Int @id @default(autoincrement())
+  id_dosen Int
+  judul String
+  jenis_jurnal String
+  penerbit String
+  tahun Int
+  jumlah_sitasi Int
+  status String
+
+  // relasi dengan Dosen
+  dosen Dosen @relation("PublikasiDosen", fields: [id_dosen], references: [id])
+}
+
+model Penelitian {
+  id Int @id @default(autoincrement())
+  id_dosen Int
+  judul_penelitian String
+  tahun Int
+  sumber_dana String
+  jumlah_dana Int
+  rekoginisi String
+  penerapan Boolean
+  pengajuan_hki Boolean
+  produk String
+
+  // relasi dengan Dosen
+  dosen Dosen @relation("PenelitianDosen", fields: [id_dosen], references: [id])
+}
+
+model Pengabdian {
+  id Int @id @default(autoincrement())
+  id_dosen Int
+  judul_pengabdian String
+  lokasi String
+  tahun Int
+  rekoginisi String
+  penerapan Boolean
+  produk String
+
+  // relasi dengan Dosen
+  dosen Dosen @relation("PengabdianDosen", fields: [id_dosen], references: [id])
+}
+
+model KegiatanLuar {
+  id Int @id @default(autoincrement())
+  id_dosen Int
+  judul_kegiatan String
+  jenis_kegiatan String
+  lokasi String
+  tanggal DateTime
+
+  // relasi dengan Dosen
+  dosen Dosen @relation("KegiatanDosen", fields: [id_dosen], references: [id])
+}
+
+model  Penghargaan {
+  id Int @id @default(autoincrement())
+  id_dosen Int
+  nama_penghargaan String
+  jenis_penghargaan String
+  lembaga String
+  tahun Int
+  tanggal_penghargaan DateTime
+
+  // relasi dengan Dosen
+  dosen Dosen @relation("PenghargaanDosen", fields: [id_dosen], references: [id])  
+}
+
+model Sertifikat{
+  id Int @id @default(autoincrement())
+  id_dosen Int
+  nama_sertifikat String
+  jenis_sertifikat String
+  lembaga String
+  bidang_kompetensi String
+  tanggal_terbit DateTime
+  tanggal_kadaluarsa DateTime
+
+  // relasi dengan Dosen
+  dosen Dosen @relation("SertifikatDosen", fields: [id_dosen], references: [id])  
+}
+
+model BukuBahanAjar {
+  id Int @id @default(autoincrement())
+  id_dosen Int
+  judul_buku String
+  jenis_buku String
+  penerbit String
+  tahun Int
+  status String
+
+  // relasi dengan Dosen
+  dosen Dosen @relation("BukuDosen", fields: [id_dosen], references: [id])  
+}
