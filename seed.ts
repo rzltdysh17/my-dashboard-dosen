@@ -54,7 +54,7 @@ const createDummyData = async () => {
             status: 'Lulus'
           }]
         },
-        kkn: {
+        kkn: faker.datatype.boolean() ? {
           create: [{
             nim: mahasiswa.nim,
             pembimbing: faker.number.int({ min: 1, max: 5 }),
@@ -63,8 +63,8 @@ const createDummyData = async () => {
             durasi: `${faker.number.int({ min: 1, max: 3 })} bulan`,
             status: 'Selesai'
           }]
-        },
-        lomba: {
+        } : undefined,
+        lomba: faker.datatype.boolean() ? {
           create: [{
             nim: mahasiswa.nim,
             pembimbing: faker.number.int({ min: 1, max: 5 }),
@@ -75,8 +75,8 @@ const createDummyData = async () => {
             tahun: faker.number.int({ min: 2019, max: 2023 }),
             juara: 'Juara 1'
           }]
-        },
-        kurikulum: {
+        } : undefined,
+        kurikulum: faker.datatype.boolean() ? {
           create: [{
             kode_matkul: faker.string.uuid(),
             semester: faker.number.int({ min: 1, max: 8 }),
@@ -84,8 +84,8 @@ const createDummyData = async () => {
             sks: faker.number.int({ min: 2, max: 4 }),
             metode_pembelajaran: faker.lorem.word()
           }]
-        },
-        seminar: {
+        } : undefined,
+        seminar: faker.datatype.boolean() ? {
           create: [{
             judul: faker.lorem.sentence(),
             peran: faker.person.jobTitle(),
@@ -94,8 +94,8 @@ const createDummyData = async () => {
             tanggal: faker.date.past({ years: 2 }),
             status: faker.helpers.arrayElement(['Terdaftar', 'Selesai'])
           }]
-        },
-        publikasi: {
+        } : undefined,
+        publikasi: faker.datatype.boolean() ? {
           create: [{
             judul: faker.lorem.sentence(),
             jenis_jurnal: faker.lorem.word(),
@@ -104,8 +104,8 @@ const createDummyData = async () => {
             jumlah_sitasi: faker.number.int({ min: 0, max: 100 }),
             status: faker.helpers.arrayElement(['Terbit', 'Menunggu'])
           }]
-        },
-        penelitian: {
+        } : undefined,
+        penelitian: faker.datatype.boolean() ? {
           create: [{
             judul_penelitian: faker.lorem.sentence(),
             tahun: faker.number.int({ min: 2019, max: 2023 }),
@@ -116,8 +116,8 @@ const createDummyData = async () => {
             pengajuan_hki: faker.datatype.boolean(),
             produk: faker.commerce.productName()
           }]
-        },
-        pengabdian: {
+        } : undefined,
+        pengabdian: faker.datatype.boolean() ? {
           create: [{
             judul_pengabdian: faker.lorem.sentence(),
             lokasi: faker.location.city(),
@@ -126,16 +126,16 @@ const createDummyData = async () => {
             penerapan: faker.datatype.boolean(),
             produk: faker.commerce.productName()
           }]
-        },
-        kegiatanLuar: {
+        } : undefined,
+        kegiatanLuar: faker.datatype.boolean() ? {
           create: [{
             judul_kegiatan: faker.lorem.sentence(),
             jenis_kegiatan: faker.lorem.word(),
             lokasi: faker.location.city(),
             tanggal: faker.date.past({ years: 2 })
           }]
-        },
-        penghargaan: {
+        } : undefined,
+        penghargaan: faker.datatype.boolean() ? {
           create: [{
             nama_penghargaan: faker.lorem.words(2),
             jenis_penghargaan: faker.lorem.word(),
@@ -143,8 +143,8 @@ const createDummyData = async () => {
             tahun: faker.number.int({ min: 2019, max: 2023 }),
             tanggal_penghargaan: faker.date.past({ years: 2 })
           }]
-        },
-        sertifikat: {
+        } : undefined,
+        sertifikat: faker.datatype.boolean() ? {
           create: [{
             nama_sertifikat: faker.lorem.words(2),
             jenis_sertifikat: faker.lorem.word(),
@@ -153,8 +153,8 @@ const createDummyData = async () => {
             tanggal_terbit: faker.date.past({ years: 2 }),
             tanggal_kadaluarsa: faker.date.future({ years: 2 })
           }]
-        },
-        buku: {
+        } : undefined,
+        buku: faker.datatype.boolean() ? {
           create: [{
             judul_buku: faker.lorem.words(3),
             jenis_buku: faker.lorem.word(),
@@ -162,7 +162,7 @@ const createDummyData = async () => {
             tahun: faker.number.int({ min: 2019, max: 2023 }),
             status: faker.helpers.arrayElement(['Terbit', 'Menunggu'])
           }]
-        }
+        } : undefined,
       },
     });
 
