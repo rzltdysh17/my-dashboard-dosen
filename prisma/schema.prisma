@@ -24,7 +24,7 @@ model Dosen {
   // relasi
   akademik BimbinganAkademik[] @relation("AkademikDosen")
   skripsi BimbinganSkripsi[] @relation("SkripsiDosen")
-  ujiSkripsi PengujiSkripsi[] @relation("PengujiDosen")
+  pengujiSkripsi PengujiSkripsi[] @relation("PengujiDosen")
   kkn BimbinganKKN[] @relation("KknDosen")
   lomba BimbinganLomba[] @relation("LombaDosen")
   kurikulum Kurikulum[] @relation("KurikulumDosen")
@@ -45,11 +45,10 @@ model Mahasiswa {
   status String
 
   // relasi
-  akademik BimbinganAkademik[]  @relation("AkademikMahasiswa")
-  skripsi BimbinganSkripsi[] @relation("SkripsiMahasiswa")
-  ujiSkripsi PengujiSkripsi[] @relation("PengujiMahasiswa")
-  kkn BimbinganKKN[] @relation("KknMahasiswa")
-  lomba BimbinganLomba[] @relation("LombaMahasiswa")
+  akademik BimbinganAkademik[] @relation("AkademikMahasiswa")
+  skripsi Skripsi[] @relation("SkripsiMahasiswa")
+  kkn KKN[] @relation("KknMahasiswa")
+  lomba Lomba[] @relation("LombaMahasiswa")
 }
 
 model BimbinganAkademik {
@@ -65,52 +64,68 @@ model BimbinganAkademik {
   dosen Dosen @relation("AkademikDosen", fields: [id_dosen], references: [id])
 }
 
-model BimbinganSkripsi {
+model Skripsi {
   id Int @id @default(autoincrement())
-  id_dosen Int
   nim Int
-  pembimbing Int
   judul_skripsi String
   status String
 
-  // relasi dengan Mahasiswa dan Dosen
+  // relasi dengan Mahasiswa, Bimbingan SKripsi, dan Penguji Skripsi
   mahasiswa Mahasiswa @relation("SkripsiMahasiswa", fields: [nim], references: [nim])
+  bimbinganSkripsi BimbinganSkripsi[] @relation("Skripsi")
+  pengujiSkripsi PengujiSkripsi[] @relation("PengujiSkripsi")
+}
+
+model BimbinganSkripsi {
+  id Int @id @default(autoincrement())
+  id_dosen Int
+  id_skripsi Int
+  pembimbing Int
+
+  // relasi dengan Dosen dan Skripsi
   dosen Dosen @relation("SkripsiDosen", fields: [id_dosen], references: [id])
+  skripsi Skripsi @relation("Skripsi", fields: [id_skripsi], references: [id])
 }
 
 model PengujiSkripsi {
   id Int @id @default(autoincrement())
   id_dosen Int
-  nim Int
+  id_skripsi Int
   penguji Int
-  judul_skripsi String
+
+  // relasi dengan Dosen dan Skripsi
+  dosen Dosen @relation("PengujiDosen", fields: [id_dosen], references: [id])
+  skripsi Skripsi @relation("PengujiSkripsi", fields: [id_skripsi], references: [id])
+}
+
+model KKN {
+  id Int @id @default(autoincrement())
+  nim Int
+  judul_kkn String
+  lokasi String
+  durasi String
+  tahun String
   status String
 
-  // relasi dengan Mahasiswa dan Dosen
-  mahasiswa Mahasiswa @relation("PengujiMahasiswa", fields: [nim], references: [nim])
-  dosen Dosen @relation("PengujiDosen", fields: [id_dosen], references: [id])
+  // relasi dengan Mahasiswa dan Bimbingan KKN
+  mahasiswa Mahasiswa @relation("KknMahasiswa", fields: [nim], references: [nim])
+  bimbinganKKN BimbinganKKN[] @relation("BimbinganKKN")
 }
 
 model BimbinganKKN {
   id Int @id @default(autoincrement())
   id_dosen Int
-  nim Int
+  id_kkn Int
   pembimbing Int
-  judul_kkn String
-  lokasi String
-  durasi String
-  status String
 
-  // relasi dengan Mahasiswa dan Dosen
-  mahasiswa Mahasiswa @relation("KknMahasiswa", fields: [nim], references: [nim])
+  // relasi dengan Mahasiswa dan KKN
   dosen Dosen @relation("KknDosen", fields: [id_dosen], references: [id])
+  kkn KKN @relation("BimbinganKKN", fields: [id_kkn], references: [id])
 }
 
-model BimbinganLomba {
+model Lomba {
   id Int @id @default(autoincrement())
-  id_dosen Int
   nim Int
-  pembimbing Int
   nama_Lomba String
   jenis_Lomba String
   tingkat_lomba String
@@ -118,9 +133,20 @@ model BimbinganLomba {
   tahun Int
   juara String
 
-  // relasi dengan Mahasiswa dan Dosen
+  // relasi dengan Mahasiswa dan Bimbingan Lomba
   mahasiswa Mahasiswa @relation("LombaMahasiswa", fields: [nim], references: [nim])
+  bimbinganLomba BimbinganLomba[] @relation("BimbinganLomba")
+}
+
+model BimbinganLomba {
+  id Int @id @default(autoincrement())
+  id_dosen Int
+  id_lomba Int
+  pembimbing Int
+
+  // relasi dengan Dosen dan Lomba
   dosen Dosen @relation("LombaDosen", fields: [id_dosen], references: [id])
+  lomba Lomba @relation("BimbinganLomba", fields: [id_lomba], references: [id])
 }
 
 model Kurikulum {
