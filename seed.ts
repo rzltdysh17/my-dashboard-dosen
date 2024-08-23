@@ -118,6 +118,11 @@ const dummyMahasiswaKKN = async () => {
     select: {
       nim: true,
     },
+    where: {
+      tahun_angkatan: {
+        lte: 2020,
+      },
+    },
   });
 
   if (allMahasiswa.length === 0) {

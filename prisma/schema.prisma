@@ -21,8 +21,10 @@ model Dosen {
   bidang_keahlian  String
   jabatan_akademik String
 
-  // relasi
-  kkn            KKN[]               @relation("KknDosen")
+  // Define the reverse relations
+  kkn1 KKN[] @relation("Dosen1")
+  kkn2 KKN[] @relation("Dosen2")
+
   akademik       BimbinganAkademik[] @relation("AkademikDosen")
   skripsi        BimbinganSkripsi[]  @relation("SkripsiDosen")
   pengujiSkripsi PengujiSkripsi[]    @relation("PengujiDosen")
@@ -99,17 +101,20 @@ model PengujiSkripsi {
 }
 
 model KKN {
-  id               Int     @id @default(autoincrement())
-  id_dosen1        Int
-  id_dosen2        Int
-  judul_kkn        String
-  lokasi           String
-  durasi           String
-  tahun            String
-  status           String
-  dosenPembingbing Dosen[] @relation("KknDosen")
+  id        Int    @id @default(autoincrement())
+  id_dosen1 Int
+  id_dosen2 Int
+  judul_kkn String
+  lokasi    String
+  durasi    String
+  tahun     String
+  status    String
 
-  // relasi dengan Mahasiswa dan Bimbingan KKN
+  // Define the foreign key relations
+  dosenPembingbing1 Dosen @relation("Dosen1", fields: [id_dosen1], references: [id])
+  dosenPembingbing2 Dosen @relation("Dosen2", fields: [id_dosen2], references: [id])
+
+  // Ensure the combination of id_dosen1 and id_dosen2 is unique
   @@unique([id_dosen1, id_dosen2])
 }
 
