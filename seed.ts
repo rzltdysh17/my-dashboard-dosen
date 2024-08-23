@@ -164,11 +164,247 @@ const dummyMahasiswaKKN = async () => {
   }
 };
 
+const dummyBimbinganAkademik = async () => {
+  const allDosen = await prisma.dosen.findMany({
+    select: {
+      id: true,
+    },
+  });
+
+  if (allDosen.length === 0) {
+    throw new Error("No Dosen found to create Bimbingan Akademik entries");
+  }
+
+  const allMahasiswa = await prisma.mahasiswa.findMany({
+    select: {
+      nim: true,
+    },
+  });
+
+  if (allMahasiswa.length === 0) {
+    throw new Error("No Mahasiswa found to create Bimbingan Akademik entries");
+  }
+
+  for (let i = 0; i < allMahasiswa.length; i++) {
+    const randomDosen = faker.helpers.arrayElement(allDosen);
+    const tahunMasuk = faker.helpers.arrayElement([
+      2019, 2020, 2021, 2022, 2023,
+    ]);
+    const status = faker.helpers.arrayElement(["Progress", "Selesai"]);
+    const existingRecord = await prisma.bimbinganAkademik.findUnique({
+      where: { nim: allMahasiswa[i].nim },
+    });
+
+    if (!existingRecord) {
+      if (status === "Selesai") {
+        await prisma.bimbinganAkademik.create({
+          data: {
+            id_dosen: randomDosen.id,
+            nim: allMahasiswa[i].nim,
+            tahun_masuk: tahunMasuk,
+            tahun_selesai: tahunMasuk + 1,
+            status: "Selesai",
+          },
+        });
+      } else {
+        await prisma.bimbinganAkademik.create({
+          data: {
+            id_dosen: randomDosen.id,
+            nim: allMahasiswa[i].nim,
+            tahun_masuk: tahunMasuk,
+            status: "Progress",
+          },
+        });
+      }
+    }
+  }
+};
+
+const dummySkripsi = async () => {
+  const allMahasiswa = await prisma.mahasiswa.findMany({
+    select: {
+      nim: true,
+    },
+    where: {
+      tahun_angkatan: {
+        lte: 2020,
+      },
+    },
+  });
+
+  if (allMahasiswa.length === 0) {
+    throw new Error("No Mahasiswa found to create Skripsi entries");
+  }
+
+  for (let i = 0; i < allMahasiswa.length; i++) {
+    const existingMahasiswa = await prisma.skripsi.findUnique({
+      where: { nim: allMahasiswa[i].nim },
+    });
+
+    if (!existingMahasiswa) {
+      await prisma.skripsi.create({
+        data: {
+          nim: allMahasiswa[i].nim,
+          judul_skripsi: faker.lorem.sentence(),
+          status: faker.helpers.arrayElement(["Progress", "Selesai"]),
+        },
+      });
+    }
+  }
+};
+
+const dummyPembimbingSkripsi = async () => {
+  // Fetch all Skripsi records
+  const allSkripsi = await prisma.skripsi.findMany({
+    select: {
+      id: true,
+    },
+  });
+
+  if (allSkripsi.length === 0) {
+    throw new Error("No Skripsi found to create Bimbingan Skripsi entries");
+  }
+
+  // Fetch all Dosen records
+  const allDosen = await prisma.dosen.findMany({
+    select: {
+      id: true,
+    },
+  });
+
+  if (allDosen.length < 2) {
+    throw new Error(
+      "Not enough Dosen found to create unique Bimbingan Skripsi entries"
+    );
+  }
+
+  for (let skripsi of allSkripsi) {
+    // Shuffle the dosen list to ensure randomness
+    const shuffledDosen = faker.helpers.shuffle(allDosen);
+
+    // Select the first dosen as pembimbing 1
+    const pembimbing1 = shuffledDosen[0];
+
+    // Find the next available dosen that is not the same as pembimbing 1
+    const pembimbing2 = shuffledDosen.find(
+      (dosen) => dosen.id !== pembimbing1.id
+    );
+
+    if (!pembimbing2) {
+      throw new Error("Not enough unique Dosen found for this Skripsi");
+    }
+
+    // Create BimbinganSkripsi entries for pembimbing 1
+    await prisma.bimbinganSkripsi.create({
+      data: {
+        id_dosen: pembimbing1.id,
+        id_skripsi: skripsi.id,
+        pembimbing: 1, // Pembimbing 1
+      },
+    });
+
+    // Create BimbinganSkripsi entries for pembimbing 2
+    await prisma.bimbinganSkripsi.create({
+      data: {
+        id_dosen: pembimbing2.id,
+        id_skripsi: skripsi.id,
+        pembimbing: 2, // Pembimbing 2
+      },
+    });
+  }
+};
+
+const dummyPengujiSkripsi = async () => {
+  // Fetch all Skripsi records along with their associated BimbinganSkripsi data
+  const allSkripsi = await prisma.skripsi.findMany({
+    select: {
+      id: true,
+      bimbinganSkripsi: {
+        select: {
+          id_dosen: true,
+          pembimbing: true,
+        },
+      },
+    },
+  });
+
+  // Fetch all Dosen records
+  const allDosen = await prisma.dosen.findMany({
+    select: {
+      id: true,
+    },
+  });
+
+  if (allSkripsi.length === 0) {
+    throw new Error("No Skripsi found to create Penguji Skripsi entries");
+  }
+
+  for (let skripsi of allSkripsi) {
+    // Filter pembimbing1 and pembimbing2 for the current skripsi
+    const pembimbing1 = skripsi.bimbinganSkripsi.find(
+      (b) => b.pembimbing === 1
+    )?.id_dosen;
+    const pembimbing2 = skripsi.bimbinganSkripsi.find(
+      (b) => b.pembimbing === 2
+    )?.id_dosen;
+
+    if (!pembimbing1 || !pembimbing2) {
+      throw new Error(`Pembimbing not found for Skripsi ID ${skripsi.id}`);
+    }
+
+    // Select penguji1 as one of the pembimbing1 or pembimbing2
+    const penguji1 = faker.helpers.arrayElement([pembimbing1, pembimbing2]);
+
+    // Select penguji2 and penguji3 from dosen excluding pembimbing1 and pembimbing2
+    const eligibleDosen = allDosen.filter(
+      (d) => d.id !== pembimbing1 && d.id !== pembimbing2
+    );
+    const penguji2 = faker.helpers.arrayElement(eligibleDosen).id;
+    let penguji3 = faker.helpers.arrayElement(eligibleDosen).id;
+
+    // Ensure penguji2 and penguji3 are different
+    while (penguji3 === penguji2) {
+      penguji3 = faker.helpers.arrayElement(eligibleDosen).id;
+    }
+
+    // Create PengujiSkripsi entries
+    await prisma.pengujiSkripsi.create({
+      data: {
+        id_skripsi: skripsi.id,
+        id_dosen: penguji1,
+        penguji: 1, // Penguji 1
+      },
+    });
+
+    await prisma.pengujiSkripsi.create({
+      data: {
+        id_skripsi: skripsi.id,
+        id_dosen: penguji2,
+        penguji: 2, // Penguji 2
+      },
+    });
+
+    await prisma.pengujiSkripsi.create({
+      data: {
+        id_skripsi: skripsi.id,
+        id_dosen: penguji3,
+        penguji: 3, // Penguji 3
+      },
+    });
+  }
+
+  console.log("Dummy Penguji Skripsi data created successfully");
+};
 const createDummy = async () => {
   await dummyDosen();
   await dummyMahasiswa();
   await dummyKKN();
   await dummyMahasiswaKKN();
+  await dummyBimbinganAkademik();
+
+  await dummySkripsi();
+  await dummyPembimbingSkripsi();
+  await dummyPengujiSkripsi();
 };
 // const createDummyData = async () => {
 //   for (let i = 0; i < 500; i++) {

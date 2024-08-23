@@ -56,7 +56,7 @@ model Mahasiswa {
 model BimbinganAkademik {
   id            Int    @id @default(autoincrement())
   id_dosen      Int
-  nim           Int
+  nim           Int    @unique
   tahun_masuk   Int
   tahun_selesai Int?
   status        String
@@ -68,7 +68,7 @@ model BimbinganAkademik {
 
 model Skripsi {
   id            Int    @id @default(autoincrement())
-  nim           Int
+  nim           Int    @unique
   judul_skripsi String
   status        String
 
@@ -114,6 +114,8 @@ model KKN {
   dosenPembingbing1 Dosen @relation("Dosen1", fields: [id_dosen1], references: [id])
   dosenPembingbing2 Dosen @relation("Dosen2", fields: [id_dosen2], references: [id])
 
+  mahasiswa KKNMahasiswa[] @relation("kkn_mahasiswa")
+
   // Ensure the combination of id_dosen1 and id_dosen2 is unique
   @@unique([id_dosen1, id_dosen2])
 }
@@ -125,6 +127,7 @@ model KKNMahasiswa {
 
   // relasi dengan Mahasiswa dan KKN
   mahasiswa Mahasiswa @relation("KknMahasiswa", fields: [id_mahasiswa], references: [nim])
+  kkn       KKN       @relation("kkn_mahasiswa", fields: [id_kkn], references: [id])
 }
 
 model Lomba {
