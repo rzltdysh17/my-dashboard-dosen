@@ -391,9 +391,7 @@ const dummyPengujiSkripsi = async () => {
         penguji: 3, // Penguji 3
       },
     });
-  }
-
-  console.log("Dummy Penguji Skripsi data created successfully");
+  }   
 };
 const createDummy = async () => {
   await dummyDosen();
