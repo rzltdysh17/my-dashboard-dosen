@@ -391,8 +391,115 @@ const dummyPengujiSkripsi = async () => {
         penguji: 3, // Penguji 3
       },
     });
-  }   
+  }
 };
+
+const dummyLomba = async () => {
+  for (let i = 0; i < 20; i++) {
+    await prisma.lomba.create({
+      data: {
+        nama_lomba: faker.lorem.words(3),
+        jenis_lomba: faker.helpers.arrayElement(["Non Akademik", "Akademik"]),
+        tingkat_lomba: faker.helpers.arrayElement([
+          "Nasional",
+          "Internasional",
+        ]),
+        lembaga: faker.company.name(),
+        tahun: faker.number.int({ min: 2019, max: 2023 }),
+      },
+    });
+  }
+};
+
+const dummyPesertaLomba = async () => {
+  // Fetch all Mahasiswa records
+  const allMahasiswa = await prisma.mahasiswa.findMany({
+    select: {
+      nim: true,
+    },
+  });
+
+  if (allMahasiswa.length === 0) {
+    throw new Error("No Mahasiswa found to create Peserta Lomba entries");
+  }
+
+  // Fetch all Lomba records
+  const allLomba = await prisma.lomba.findMany({
+    select: {
+      id: true,
+    },
+  });
+
+  if (allLomba.length === 0) {
+    throw new Error("No Lomba found to create Peserta Lomba entries");
+  }
+
+  // Iterate over each Lomba
+  for (const lomba of allLomba) {
+    // Shuffle the Mahasiswa list to ensure random selection
+    const shuffledMahasiswa = faker.helpers.shuffle(allMahasiswa);
+
+    // Determine a random number of participants for this Lomba
+    const randomPesertaLength = faker.number.int({
+      min: 1,
+      max: Math.min(5, shuffledMahasiswa.length), // Limit to a maximum of 5 participants per Lomba for variety
+    });
+
+    // Track the Mahasiswa that have already been added to this Lomba
+    const addedMahasiswa = new Set<number>();
+
+    // Create PesertaLomba entries for this Lomba
+    for (let i = 0; i < randomPesertaLength; i++) {
+      const randomMahasiswa = shuffledMahasiswa[i];
+
+      // Ensure the same Mahasiswa is not added twice to the same Lomba
+      if (!addedMahasiswa.has(randomMahasiswa.nim)) {
+        await prisma.pesertaLomba.create({
+          data: {
+            nim: randomMahasiswa.nim,
+            id_lomba: lomba.id,
+            juara: faker.helpers.arrayElement(["1", "2", "3"]),
+          },
+        });
+        addedMahasiswa.add(randomMahasiswa.nim);
+      }
+    }
+  }
+};
+
+const bimbinganLomba = async () => {
+  const allDosen = await prisma.dosen.findMany({
+    select: {
+      id: true,
+    },
+  });
+
+  if (allDosen.length === 0) {
+    throw new Error("No Dosen found to create Bimbingan Lomba entries");
+  }
+
+  const allLomba = await prisma.lomba.findMany({
+    select: {
+      id: true,
+    },
+  });
+
+  if (allLomba.length === 0) {
+    throw new Error("No Lomba found to create Bimbingan Lomba entries");
+  }
+
+  for (let i = 0; i < allLomba.length; i++) {
+    const randomDosen = faker.helpers.arrayElement(allDosen);
+    await prisma.bimbinganLomba.create({
+      data: {
+        id_dosen: randomDosen.id,
+        id_lomba: allLomba[i].id,
+        pembingbing: faker.number.int({ min: 1, max: 2 }),
+      },
+    });
+  }
+};
+
 const createDummy = async () => {
   await dummyDosen();
   await dummyMahasiswa();
