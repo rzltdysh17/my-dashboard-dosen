@@ -41,17 +41,16 @@ model Dosen {
 }
 
 model Mahasiswa {
-  nim            Int    @id @unique
+  nim            Int              @id @unique
   nama           String
   tahun_angkatan Int
   status         String
 
-  // relasi
-  akademik     BimbinganAkademik[] @relation("AkademikMahasiswa")
-  skripsi      Skripsi[]           @relation("SkripsiMahasiswa")
-  lomba        Lomba[]             @relation("LombaMahasiswa")
-  kkn          KKNMahasiswa?       @relation("KknMahasiswa")
-  PesertaLomba PesertaLomba[]
+  // Relasi
+  akademik       BimbinganAkademik[] @relation("AkademikMahasiswa")
+  skripsi        Skripsi[]           @relation("SkripsiMahasiswa")
+  kkn            KKNMahasiswa?       @relation("KknMahasiswa")
+  lomba          PesertaLomba[]      @relation("PesertaLomba")
 }
 
 model BimbinganAkademik {
@@ -132,16 +131,16 @@ model KKNMahasiswa {
 }
 
 model Lomba {
-  id            Int    @id @default(autoincrement())
+  id            Int              @id @default(autoincrement())
   nama_lomba    String
   jenis_lomba   String
   tingkat_lomba String
   lembaga       String
-  tahun         Int 
+  tahun         Int
 
-  // relasi dengan Mahasiswa dan Bimbingan Lomba
+  // Relasi dengan BimbinganLomba dan PesertaLomba
   bimbinganLomba BimbinganLomba[] @relation("BimbinganLomba")
-  PesertaLomba   PesertaLomba[]
+  pesertaLomba   PesertaLomba[]   @relation("PesertaLomba")
 }
 
 model PesertaLomba {
@@ -150,9 +149,9 @@ model PesertaLomba {
   nim      Int
   juara    String
 
-  // relasi dengan Lomba dan Mahasiswa
-  lomba     Lomba     @relation(fields: [id_lomba], references: [id])
-  mahasiswa Mahasiswa @relation(fields: [nim], references: [nim])
+  // Relasi dengan Lomba dan Mahasiswa
+  lomba     Lomba     @relation("PesertaLomba", fields: [id_lomba], references: [id])
+  mahasiswa Mahasiswa @relation("PesertaLomba", fields: [nim], references: [nim])
 }
 
 model BimbinganLomba {

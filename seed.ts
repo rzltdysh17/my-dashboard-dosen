@@ -16,6 +16,33 @@ const generateUniqueNIDN = async (): Promise<string> => {
 
   return nidn;
 };
+
+const generateUniqueKodeMatkul = async (): Promise<string> => {
+  // Fetch the highest existing kodeMatkul
+  const lastMatkul = await prisma.kurikulum.findMany({
+    orderBy: {
+      kode_matkul: "desc",
+    },
+    take: 1,
+    select: {
+      kode_matkul: true,
+    },
+  });
+
+  let nextNumber = 1;
+
+  if (lastMatkul.length > 0) {
+    // Extract the numeric part and increment it
+    const lastKode = lastMatkul[0].kode_matkul;
+    const numericPart = parseInt(lastKode.replace(/\D/g, ""), 10);
+    nextNumber = numericPart + 1;
+  }
+
+  // Generate the next kodeMatkul with the format MKXXX (e.g., MK001, MK002)
+  const kodeMatkul = `MK${nextNumber.toString().padStart(3, "0")}`;
+
+  return kodeMatkul;
+};
 const dummyDosen = async () => {
   for (let i = 0; i < 15; i++) {
     const jenjang_terakhir = faker.helpers.arrayElement(["S2", "S3"]);
@@ -191,31 +218,31 @@ const dummyBimbinganAkademik = async () => {
       2019, 2020, 2021, 2022, 2023,
     ]);
     const status = faker.helpers.arrayElement(["Progress", "Selesai"]);
+
+    // Check if a BimbinganAkademik record already exists for the current nim
     const existingRecord = await prisma.bimbinganAkademik.findUnique({
       where: { nim: allMahasiswa[i].nim },
     });
 
     if (!existingRecord) {
+      let tahunSelesai = null;
       if (status === "Selesai") {
-        await prisma.bimbinganAkademik.create({
-          data: {
-            id_dosen: randomDosen.id,
-            nim: allMahasiswa[i].nim,
-            tahun_masuk: tahunMasuk,
-            tahun_selesai: tahunMasuk + 1,
-            status: "Selesai",
-          },
-        });
-      } else {
-        await prisma.bimbinganAkademik.create({
-          data: {
-            id_dosen: randomDosen.id,
-            nim: allMahasiswa[i].nim,
-            tahun_masuk: tahunMasuk,
-            status: "Progress",
-          },
-        });
+        if (tahunMasuk === 2019) {
+          tahunSelesai = tahunMasuk + 4; // Fixed +4 for 2019 entries
+        } else {
+          tahunSelesai = tahunMasuk + faker.number.int({ min: 4, max: 5 }); // +4 or +5 for other entries
+        }
       }
+
+      await prisma.bimbinganAkademik.create({
+        data: {
+          id_dosen: randomDosen.id,
+          nim: allMahasiswa[i].nim,
+          tahun_masuk: tahunMasuk,
+          tahun_selesai: tahunSelesai,
+          status: status,
+        },
+      });
     }
   }
 };
@@ -439,35 +466,44 @@ const dummyPesertaLomba = async () => {
     // Shuffle the Mahasiswa list to ensure random selection
     const shuffledMahasiswa = faker.helpers.shuffle(allMahasiswa);
 
-    // Determine a random number of participants for this Lomba
-    const randomPesertaLength = faker.number.int({
-      min: 1,
-      max: Math.min(5, shuffledMahasiswa.length), // Limit to a maximum of 5 participants per Lomba for variety
-    });
+    // Limit the number of participants to the number of available juara (1, 2, 3)
+    const maxParticipants = Math.min(3, shuffledMahasiswa.length);
+
+    // Juara options that haven't been assigned yet
+    const availableJuara = ["1", "2", "3"];
 
     // Track the Mahasiswa that have already been added to this Lomba
     const addedMahasiswa = new Set<number>();
 
     // Create PesertaLomba entries for this Lomba
-    for (let i = 0; i < randomPesertaLength; i++) {
+    for (let i = 0; i < maxParticipants; i++) {
       const randomMahasiswa = shuffledMahasiswa[i];
 
       // Ensure the same Mahasiswa is not added twice to the same Lomba
-      if (!addedMahasiswa.has(randomMahasiswa.nim)) {
+      if (
+        !addedMahasiswa.has(randomMahasiswa.nim) &&
+        availableJuara.length > 0
+      ) {
+        // Assign the next available juara
+        const juara = availableJuara.shift(); // Remove the first juara from the list
+
+        // Create the PesertaLomba entry
         await prisma.pesertaLomba.create({
           data: {
             nim: randomMahasiswa.nim,
             id_lomba: lomba.id,
-            juara: faker.helpers.arrayElement(["1", "2", "3"]),
+            juara: juara!,
           },
         });
+
+        // Track the Mahasiswa that has been added
         addedMahasiswa.add(randomMahasiswa.nim);
       }
     }
   }
 };
 
-const bimbinganLomba = async () => {
+const dummyBimbinganLomba = async () => {
   const allDosen = await prisma.dosen.findMany({
     select: {
       id: true,
@@ -489,27 +525,331 @@ const bimbinganLomba = async () => {
   }
 
   for (let i = 0; i < allLomba.length; i++) {
-    const randomDosen = faker.helpers.arrayElement(allDosen);
-    await prisma.bimbinganLomba.create({
-      data: {
-        id_dosen: randomDosen.id,
+    const shuffledDosen = faker.helpers.shuffle(allDosen);
+    const existDosen = await prisma.bimbinganLomba.findFirst({
+      where: {
         id_lomba: allLomba[i].id,
-        pembingbing: faker.number.int({ min: 1, max: 2 }),
+        id_dosen: shuffledDosen[0].id,
+      },
+    });
+
+    if (!existDosen) {
+      await prisma.bimbinganLomba.create({
+        data: {
+          id_lomba: allLomba[i].id,
+          id_dosen: shuffledDosen[0].id,
+          pembimbing: 1,
+        },
+      });
+    }
+  }
+};
+
+const dummySeminar = async () => {
+  const allDosen = await prisma.dosen.findMany({
+    select: {
+      id: true,
+    },
+  });
+
+  if (allDosen.length === 0) {
+    throw new Error("No Dosen found to create Seminar entries");
+  }
+
+  for (let i = 0; i < faker.number.int({ min: 5, max: 20 }); i++) {
+    const randomDosen = faker.helpers.arrayElement(allDosen);
+    const seminarDate = faker.date.past({ years: 2 });
+
+    // Determine the status based on the seminar date
+    const seminarStatus = seminarDate < new Date() ? "Selesai" : "Progress";
+
+    await prisma.seminar.create({
+      data: {
+        judul: faker.lorem.sentence(),
+        id_dosen: randomDosen.id,
+        peran: faker.helpers.arrayElement(["Peserta", "Pemateri"]),
+        jenis_seminar: faker.helpers.arrayElement([
+          "Nasional",
+          "Internasional",
+        ]),
+        lokasi: faker.location.city(),
+        status: seminarStatus,
+        tanggal: seminarDate,
       },
     });
   }
 };
 
+const dummyKurikulum = async () => {
+  const allDosen = await prisma.dosen.findMany({
+    select: {
+      id: true,
+    },
+  });
+
+  if (allDosen.length === 0) {
+    throw new Error("No Dosen found to create Kurikulum entries");
+  }
+
+  for (let i = 0; i < faker.number.int({ min: 5, max: 20 }); i++) {
+    const randomDosen = faker.helpers.arrayElement(allDosen);
+
+    await prisma.kurikulum.create({
+      data: {
+        kode_matkul: await generateUniqueKodeMatkul(),
+        id_dosen: randomDosen.id,
+        semester: faker.helpers.arrayElement([1, 2, 3, 4, 5, 6, 7, 8]),
+        metode_pembelajaran: faker.helpers.arrayElement([
+          "Case Method",
+          "Team Based Project",
+          "Dan Lain-lain",
+        ]),
+        sks: faker.number.int({ min: 2, max: 4 }),
+        nama_matkul: faker.lorem.words(2),
+      },
+    });
+  }
+};
+
+const dummyPublikasiJurnal = async () => {
+  const allDosen = await prisma.dosen.findMany({
+    select: {
+      id: true,
+    },
+  });
+
+  if (allDosen.length === 0) {
+    throw new Error("No Dosen found to create Publikasi Jurnal entries");
+  }
+
+  for (let i = 0; i < faker.number.int({ min: 5, max: 20 }); i++) {
+    const randomDosen = faker.helpers.arrayElement(allDosen);
+
+    await prisma.publikasiJurnal.create({
+      data: {
+        judul: faker.lorem.sentence(),
+        jenis_jurnal: faker.helpers.arrayElement([
+          "Terakreditasi",
+          "Tidak Terakreditasi",
+        ]),
+        penerbit: faker.company.name(),
+        tahun: faker.number.int({ min: 2019, max: 2023 }),
+        jumlah_sitasi: faker.number.int({ min: 0, max: 100 }),
+        status: faker.helpers.arrayElement(["Terbit", "Menunggu"]),
+        id_dosen: randomDosen.id,
+      },
+    });
+  }
+};
+
+const dummyPenelitian = async () => {
+  const allDosen = await prisma.dosen.findMany({
+    select: {
+      id: true,
+    },
+  });
+
+  if (allDosen.length === 0) {
+    throw new Error("No Dosen found to create Penelitian entries");
+  }
+
+  for (let i = 0; i < faker.number.int({ min: 5, max: 20 }); i++) {
+    const randomDosen = faker.helpers.arrayElement(allDosen);
+
+    await prisma.penelitian.create({
+      data: {
+        judul_penelitian: faker.lorem.sentence(),
+        tahun: faker.number.int({ min: 2019, max: 2023 }),
+        sumber_dana: faker.company.name(),
+        jumlah_dana: faker.number.int({ min: 1000000, max: 100000000 }),
+        rekoginisi: faker.lorem.word(),
+        penerapan: faker.datatype.boolean(),
+        pengajuan_hki: faker.datatype.boolean(),
+        produk: faker.commerce.productName(),
+        id_dosen: randomDosen.id,
+      },
+    });
+  }
+};
+
+const dummyPengabdian = async () => {
+  const allDosen = await prisma.dosen.findMany({
+    select: {
+      id: true,
+    },
+  });
+
+  if (allDosen.length === 0) {
+    throw new Error("No Dosen found to create Pengabdian entries");
+  }
+
+  for (let i = 0; i < faker.number.int({ min: 5, max: 20 }); i++) {
+    const randomDosen = faker.helpers.arrayElement(allDosen);
+
+    await prisma.pengabdian.create({
+      data: {
+        judul_pengabdian: faker.lorem.sentence(),
+        lokasi: faker.location.city(),
+        tahun: faker.number.int({ min: 2019, max: 2023 }),
+        rekoginisi: faker.lorem.word(),
+        penerapan: faker.datatype.boolean(),
+        produk: faker.commerce.productName(),
+        id_dosen: randomDosen.id,
+      },
+    });
+  }
+};
+
+const dummyKegiatanLuar = async () => {
+  //         kegiatanLuar: faker.datatype.boolean()
+  //           ? {
+  //               create: [
+  //                 {
+  //                   judul_kegiatan: faker.lorem.sentence(),
+  //                   jenis_kegiatan: faker.lorem.word(),
+  //                   lokasi: faker.location.city(),
+  //                   tanggal: faker.date.past({ years: 2 }),
+  //                 },
+  //               ],
+  //             }
+  //           : undefined,
+
+  const allDosen = await prisma.dosen.findMany({
+    select: {
+      id: true,
+    },
+  });
+
+  if (allDosen.length === 0) {
+    throw new Error("No Dosen found to create Kegiatan Luar entries");
+  }
+
+  for (let i = 0; i < faker.number.int({ min: 5, max: 20 }); i++) {
+    const randomDosen = faker.helpers.arrayElement(allDosen);
+
+    await prisma.kegiatanLuar.create({
+      data: {
+        judul_kegiatan: faker.lorem.sentence(),
+        jenis_kegiatan: faker.lorem.word(),
+        lokasi: faker.location.city(),
+        tanggal: faker.date.past({ years: 2 }),
+        id_dosen: randomDosen.id,
+      },
+    });
+  }
+};
+
+const dummyPenghargaan = async () => {
+  const allDosen = await prisma.dosen.findMany({
+    select: {
+      id: true,
+    },
+  });
+
+  if (allDosen.length === 0) {
+    throw new Error("No Dosen found to create Penghargaan entries");
+  }
+
+  for (let i = 0; i < faker.number.int({ min: 5, max: 20 }); i++) {
+    const randomDosen = faker.helpers.arrayElement(allDosen);
+
+    await prisma.penghargaan.create({
+      data: {
+        nama_penghargaan: faker.lorem.words(2),
+        jenis_penghargaan: faker.lorem.word(),
+        lembaga: faker.company.name(),
+        tahun: faker.number.int({ min: 2019, max: 2023 }),
+        tanggal_penghargaan: faker.date.past({ years: 2 }),
+        id_dosen: randomDosen.id,
+      },
+    });
+  }
+};
+
+const dummySertifikat = async () => {
+  const allDosen = await prisma.dosen.findMany({
+    select: {
+      id: true,
+    },
+  });
+
+  if (allDosen.length === 0) {
+    throw new Error("No Dosen found to create Sertifikat entries");
+  }
+
+  for (let i = 0; i < faker.number.int({ min: 5, max: 20 }); i++) {
+    const randomDosen = faker.helpers.arrayElement(allDosen);
+
+    await prisma.sertifikat.create({
+      data: {
+        nama_sertifikat: faker.lorem.words(2),
+        jenis_sertifikat: faker.lorem.word(),
+        lembaga: faker.company.name(),
+        bidang_kompetensi: faker.person.jobType(),
+        tanggal_terbit: faker.date.past({ years: 2 }),
+        tanggal_kadaluarsa: faker.date.future({ years: 2 }),
+        id_dosen: randomDosen.id,
+      },
+    });
+  }
+};
+
+const dummyBukuBahanAjar = async () => {
+  const allDosen = await prisma.dosen.findMany({
+    select: {
+      id: true,
+    },
+  });
+
+  if (allDosen.length === 0) {
+    throw new Error("No Dosen found to create Pendidikan entries");
+  }
+
+  for (let i = 0; i < faker.number.int({ min: 5, max: 20 }); i++) {
+    const randomDosen = faker.helpers.arrayElement(allDosen);
+
+    await prisma.bukuBahanAjar.create({
+      data: {
+        judul_buku: faker.lorem.words(3),
+        jenis_buku: faker.lorem.word(),
+        penerbit: faker.company.name(),
+        tahun: faker.number.int({ min: 2019, max: 2023 }),
+        status: faker.helpers.arrayElement(["Terbit", "Menunggu"]),
+        id_dosen: randomDosen.id,
+      },
+    });
+  }
+};
 const createDummy = async () => {
+  // Dosen & Mahasiswa
   await dummyDosen();
   await dummyMahasiswa();
+
+  // KKN
   await dummyKKN();
   await dummyMahasiswaKKN();
+
   await dummyBimbinganAkademik();
 
+  // Skripsi
   await dummySkripsi();
   await dummyPembimbingSkripsi();
   await dummyPengujiSkripsi();
+
+  // Lomba
+  await dummyLomba();
+  await dummyPesertaLomba();
+  await dummyBimbinganLomba();
+
+  await dummySeminar();
+  await dummyKurikulum();
+  await dummyPublikasiJurnal();
+  await dummyPenelitian();
+  await dummyPengabdian();
+  await dummyKegiatanLuar();
+  await dummyPenghargaan();
+  await dummySertifikat();
+  await dummyBukuBahanAjar();
 };
 // const createDummyData = async () => {
 //   for (let i = 0; i < 500; i++) {
