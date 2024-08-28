@@ -30,7 +30,7 @@ model Dosen {
   pengujiSkripsi PengujiSkripsi[]    @relation("PengujiDosen")
   lomba          BimbinganLomba[]    @relation("LombaDosen")
   kurikulum      Kurikulum[]         @relation("KurikulumDosen")
-  seminar        Seminar[]           @relation("SeminarDosen")
+  seminar        PesertaSeminar[]    @relation("PesertaSeminar")
   publikasi      PublikasiJurnal[]   @relation("PublikasiDosen")
   penelitian     Penelitian[]        @relation("PenelitianDosen")
   pengabdian     Pengabdian[]        @relation("PengabdianDosen")
@@ -41,16 +41,16 @@ model Dosen {
 }
 
 model Mahasiswa {
-  nim            Int              @id @unique
+  nim            Int    @id @unique
   nama           String
   tahun_angkatan Int
   status         String
 
   // Relasi
-  akademik       BimbinganAkademik[] @relation("AkademikMahasiswa")
-  skripsi        Skripsi[]           @relation("SkripsiMahasiswa")
-  kkn            KKNMahasiswa?       @relation("KknMahasiswa")
-  lomba          PesertaLomba[]      @relation("PesertaLomba")
+  akademik BimbinganAkademik[] @relation("AkademikMahasiswa")
+  skripsi  Skripsi[]           @relation("SkripsiMahasiswa")
+  kkn      KKNMahasiswa?       @relation("KknMahasiswa")
+  lomba    PesertaLomba[]      @relation("PesertaLomba")
 }
 
 model BimbinganAkademik {
@@ -131,7 +131,7 @@ model KKNMahasiswa {
 }
 
 model Lomba {
-  id            Int              @id @default(autoincrement())
+  id            Int    @id @default(autoincrement())
   nama_lomba    String
   jenis_lomba   String
   tingkat_lomba String
@@ -179,16 +179,24 @@ model Kurikulum {
 
 model Seminar {
   id            Int      @id @default(autoincrement())
-  id_dosen      Int
   judul         String
-  peran         String
   jenis_seminar String
   lokasi        String
   tanggal       DateTime
   status        String
 
-  // relasi dengan Dosen
-  dosen Dosen @relation("SeminarDosen", fields: [id_dosen], references: [id])
+  // relasi dengan Dosen dan PesertaSeminar
+  pesertaSeminar PesertaSeminar[] @relation("PesertaSeminar")
+}
+
+model PesertaSeminar {
+  id         Int    @id @default(autoincrement())
+  id_seminar Int
+  id_dosen   Int
+  peran      String
+
+  seminar Seminar @relation("PesertaSeminar", fields: [id_seminar], references: [id])
+  dosen   Dosen   @relation("PesertaSeminar", fields: [id_dosen], references: [id])
 }
 
 model PublikasiJurnal {
