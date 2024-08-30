@@ -238,6 +238,7 @@ model Pengabdian {
   rekoginisi       String
   penerapan        Boolean
   produk           String
+  pengajuan_hki    Boolean
 
   // relasi dengan Dosen
   dosen Dosen @relation("PengabdianDosen", fields: [id_dosen], references: [id])
