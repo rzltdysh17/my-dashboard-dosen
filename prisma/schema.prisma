@@ -30,7 +30,7 @@ model Dosen {
   pengujiSkripsi PengujiSkripsi[]    @relation("PengujiDosen")
   lomba          BimbinganLomba[]    @relation("LombaDosen")
   kurikulum      Kurikulum[]         @relation("KurikulumDosen")
-  seminar        Seminar[]           @relation("SeminarDosen")
+  seminar        PesertaSeminar[]    @relation("PesertaSeminar")
   publikasi      PublikasiJurnal[]   @relation("PublikasiDosen")
   penelitian     Penelitian[]        @relation("PenelitianDosen")
   pengabdian     Pengabdian[]        @relation("PengabdianDosen")
@@ -46,12 +46,11 @@ model Mahasiswa {
   tahun_angkatan Int
   status         String
 
-  // relasi
-  akademik     BimbinganAkademik[] @relation("AkademikMahasiswa")
-  skripsi      Skripsi[]           @relation("SkripsiMahasiswa")
-  lomba        Lomba[]             @relation("LombaMahasiswa")
-  kkn          KKNMahasiswa?       @relation("KknMahasiswa")
-  PesertaLomba PesertaLomba[]
+  // Relasi
+  akademik BimbinganAkademik[] @relation("AkademikMahasiswa")
+  skripsi  Skripsi[]           @relation("SkripsiMahasiswa")
+  kkn      PesertaKKN?       @relation("PesertaKKN")
+  lomba    PesertaLomba[]      @relation("PesertaLomba")
 }
 
 model BimbinganAkademik {
@@ -115,19 +114,19 @@ model KKN {
   dosenPembingbing1 Dosen @relation("Dosen1", fields: [id_dosen1], references: [id])
   dosenPembingbing2 Dosen @relation("Dosen2", fields: [id_dosen2], references: [id])
 
-  mahasiswa KKNMahasiswa[] @relation("kkn_mahasiswa")
+  mahasiswa PesertaKKN[] @relation("kkn_mahasiswa")
 
   // Ensure the combination of id_dosen1 and id_dosen2 is unique
   @@unique([id_dosen1, id_dosen2])
 }
 
-model KKNMahasiswa {
+model PesertaKKN {
   id           Int @id @default(autoincrement())
   id_mahasiswa Int @unique
   id_kkn       Int
 
   // relasi dengan Mahasiswa dan KKN
-  mahasiswa Mahasiswa @relation("KknMahasiswa", fields: [id_mahasiswa], references: [nim])
+  mahasiswa Mahasiswa @relation("PesertaKKN", fields: [id_mahasiswa], references: [nim])
   kkn       KKN       @relation("kkn_mahasiswa", fields: [id_kkn], references: [id])
 }
 
@@ -137,11 +136,11 @@ model Lomba {
   jenis_lomba   String
   tingkat_lomba String
   lembaga       String
-  tahun         Int 
+  tahun         Int
 
-  // relasi dengan Mahasiswa dan Bimbingan Lomba
+  // Relasi dengan BimbinganLomba dan PesertaLomba
   bimbinganLomba BimbinganLomba[] @relation("BimbinganLomba")
-  PesertaLomba   PesertaLomba[]
+  pesertaLomba   PesertaLomba[]   @relation("PesertaLomba")
 }
 
 model PesertaLomba {
@@ -150,9 +149,9 @@ model PesertaLomba {
   nim      Int
   juara    String
 
-  // relasi dengan Lomba dan Mahasiswa
-  lomba     Lomba     @relation(fields: [id_lomba], references: [id])
-  mahasiswa Mahasiswa @relation(fields: [nim], references: [nim])
+  // Relasi dengan Lomba dan Mahasiswa
+  lomba     Lomba     @relation("PesertaLomba", fields: [id_lomba], references: [id])
+  mahasiswa Mahasiswa @relation("PesertaLomba", fields: [nim], references: [nim])
 }
 
 model BimbinganLomba {
@@ -180,16 +179,24 @@ model Kurikulum {
 
 model Seminar {
   id            Int      @id @default(autoincrement())
-  id_dosen      Int
   judul         String
-  peran         String
   jenis_seminar String
   lokasi        String
   tanggal       DateTime
   status        String
 
-  // relasi dengan Dosen
-  dosen Dosen @relation("SeminarDosen", fields: [id_dosen], references: [id])
+  // relasi dengan Dosen dan PesertaSeminar
+  pesertaSeminar PesertaSeminar[] @relation("PesertaSeminar")
+}
+
+model PesertaSeminar {
+  id         Int    @id @default(autoincrement())
+  id_seminar Int
+  id_dosen   Int
+  peran      String
+
+  seminar Seminar @relation("PesertaSeminar", fields: [id_seminar], references: [id])
+  dosen   Dosen   @relation("PesertaSeminar", fields: [id_dosen], references: [id])
 }
 
 model PublikasiJurnal {
@@ -216,7 +223,7 @@ model Penelitian {
   rekoginisi       String
   penerapan        Boolean
   pengajuan_hki    Boolean
-  produk           String
+  produk           Boolean
 
   // relasi dengan Dosen
   dosen Dosen @relation("PenelitianDosen", fields: [id_dosen], references: [id])
@@ -230,7 +237,8 @@ model Pengabdian {
   tahun            Int
   rekoginisi       String
   penerapan        Boolean
-  produk           String
+  produk           Boolean
+  pengajuan_hki    Boolean
 
   // relasi dengan Dosen
   dosen Dosen @relation("PengabdianDosen", fields: [id_dosen], references: [id])
