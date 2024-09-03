@@ -49,7 +49,7 @@ model Mahasiswa {
   // Relasi
   akademik BimbinganAkademik[] @relation("AkademikMahasiswa")
   skripsi  Skripsi[]           @relation("SkripsiMahasiswa")
-  kkn      KKNMahasiswa?       @relation("KknMahasiswa")
+  kkn      PesertaKKN?       @relation("PesertaKKN")
   lomba    PesertaLomba[]      @relation("PesertaLomba")
 }
 
@@ -114,19 +114,19 @@ model KKN {
   dosenPembingbing1 Dosen @relation("Dosen1", fields: [id_dosen1], references: [id])
   dosenPembingbing2 Dosen @relation("Dosen2", fields: [id_dosen2], references: [id])
 
-  mahasiswa KKNMahasiswa[] @relation("kkn_mahasiswa")
+  mahasiswa PesertaKKN[] @relation("kkn_mahasiswa")
 
   // Ensure the combination of id_dosen1 and id_dosen2 is unique
   @@unique([id_dosen1, id_dosen2])
 }
 
-model KKNMahasiswa {
+model PesertaKKN {
   id           Int @id @default(autoincrement())
   id_mahasiswa Int @unique
   id_kkn       Int
 
   // relasi dengan Mahasiswa dan KKN
-  mahasiswa Mahasiswa @relation("KknMahasiswa", fields: [id_mahasiswa], references: [nim])
+  mahasiswa Mahasiswa @relation("PesertaKKN", fields: [id_mahasiswa], references: [nim])
   kkn       KKN       @relation("kkn_mahasiswa", fields: [id_kkn], references: [id])
 }
 
@@ -223,7 +223,7 @@ model Penelitian {
   rekoginisi       String
   penerapan        Boolean
   pengajuan_hki    Boolean
-  produk           String
+  produk           Boolean
 
   // relasi dengan Dosen
   dosen Dosen @relation("PenelitianDosen", fields: [id_dosen], references: [id])
@@ -237,7 +237,7 @@ model Pengabdian {
   tahun            Int
   rekoginisi       String
   penerapan        Boolean
-  produk           String
+  produk           Boolean
   pengajuan_hki    Boolean
 
   // relasi dengan Dosen

@@ -175,13 +175,13 @@ const dummyMahasiswaKKN = async () => {
     const randomKKN = faker.helpers.arrayElement(allKKN);
 
     // Check if the mahasiswa is already assigned to a KKN
-    const existingKKNMahasiswa = await prisma.kKNMahasiswa.findUnique({
+    const existingKKNMahasiswa = await prisma.pesertaKKN.findUnique({
       where: { id_mahasiswa: shuffledMahasiswa[i].nim },
     });
 
     // If the mahasiswa is not assigned to a KKN, create a new record
     if (!existingKKNMahasiswa) {
-      await prisma.kKNMahasiswa.create({
+      await prisma.pesertaKKN.create({
         data: {
           id_kkn: randomKKN.id,
           id_mahasiswa: shuffledMahasiswa[i].nim,
@@ -633,23 +633,45 @@ const dummyKurikulum = async () => {
     throw new Error("No Dosen found to create Kurikulum entries");
   }
 
-  for (let i = 0; i < faker.number.int({ min: 5, max: 20 }); i++) {
-    const randomDosen = faker.helpers.arrayElement(allDosen);
+  // Object to track the total SKS per semester
+  const sksPerSemester: { [key: number]: number } = {};
 
-    await prisma.kurikulum.create({
-      data: {
-        kode_matkul: await generateUniqueKodeMatkul(),
-        id_dosen: randomDosen.id,
-        semester: faker.helpers.arrayElement([1, 2, 3, 4, 5, 6, 7, 8]),
-        metode_pembelajaran: faker.helpers.arrayElement([
-          "Case Method",
-          "Team Based Project",
-          "Dan Lain-lain",
-        ]),
-        sks: faker.number.int({ min: 2, max: 4 }),
-        nama_matkul: faker.lorem.words(2),
-      },
-    });
+  // Initialize SKS counters for each semester (1 to 8)
+  for (let semester = 1; semester <= 8; semester++) {
+    sksPerSemester[semester] = 0;
+  }
+
+  // Loop to create courses while ensuring each semester has 12 to 16 SKS
+  for (let semester = 1; semester <= 8; semester++) {
+    while (sksPerSemester[semester] < 12) {
+      const randomDosen = faker.helpers.arrayElement(allDosen);
+
+      // Determine the number of SKS for this course
+      let maxSKS = 16 - sksPerSemester[semester];
+      if (maxSKS > 4) maxSKS = 4; // Ensure each course is between 2-4 SKS
+
+      const sks = faker.number.int({ min: 2, max: Math.min(4, maxSKS) });
+
+      await prisma.kurikulum.create({
+        data: {
+          kode_matkul: await generateUniqueKodeMatkul(),
+          id_dosen: randomDosen.id,
+          semester: semester,
+          metode_pembelajaran: faker.helpers.arrayElement([
+            "Case Method",
+            "Team Based Project",
+            "Inquiry Based Learning",
+            "Discovery Learning",
+            "Cooperative Learning",
+          ]),
+          sks: sks,
+          nama_matkul: faker.lorem.words(2),
+        },
+      });
+
+      // Update the SKS counter for the semester
+      sksPerSemester[semester] += sks;
+    }
   }
 };
 
@@ -709,7 +731,7 @@ const dummyPenelitian = async () => {
         rekoginisi: faker.helpers.arrayElement(["Nasional", "Internasional"]),
         penerapan: faker.datatype.boolean(),
         pengajuan_hki: faker.datatype.boolean(),
-        produk: faker.commerce.productName(),
+        produk: faker.datatype.boolean(),
         id_dosen: randomDosen.id,
       },
     });
@@ -737,7 +759,7 @@ const dummyPengabdian = async () => {
         tahun: faker.number.int({ min: 2019, max: 2023 }),
         rekoginisi: faker.helpers.arrayElement(["Nasional", "Internasional"]),
         penerapan: faker.datatype.boolean(),
-        produk: faker.commerce.productName(),
+        produk: faker.datatype.boolean(),
         id_dosen: randomDosen.id,
         pengajuan_hki: faker.datatype.boolean(),
       },
