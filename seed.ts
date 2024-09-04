@@ -205,6 +205,7 @@ const dummyBimbinganAkademik = async () => {
   const allMahasiswa = await prisma.mahasiswa.findMany({
     select: {
       nim: true,
+      tahun_angkatan: true, // Assuming `tahun_masuk` is a field in the `mahasiswa` table
     },
   });
 
@@ -212,54 +213,57 @@ const dummyBimbinganAkademik = async () => {
     throw new Error("No Mahasiswa found to create Bimbingan Akademik entries");
   }
 
-  // Object to track the number of Dosen assigned per tahun angkatan
-  const dosenPerAngkatan: { [key: number]: number } = {};
+  // Object to store 4 Dosen per tahun angkatan
+  const dosenPerAngkatan: { [key: number]: number[] } = {};
 
-  for (let i = 0; i < allMahasiswa.length; i++) {
-    const tahunMasuk = faker.helpers.arrayElement([
-      2019, 2020, 2021, 2022, 2023,
-    ]);
-
-    // Initialize the counter for the current tahunMasuk if it doesn't exist
+  // Assign 4 random Dosen for each tahun angkatan
+  for (const tahunMasuk of [2019, 2020, 2021, 2022, 2023]) {
     if (!dosenPerAngkatan[tahunMasuk]) {
-      dosenPerAngkatan[tahunMasuk] = 0;
+      dosenPerAngkatan[tahunMasuk] = faker.helpers
+        .arrayElements(allDosen, 4)
+        .map((dosen) => dosen.id);
     }
+  }
 
-    // Skip this entry if the maximum number of Dosen has been assigned for this tahunMasuk
-    if (dosenPerAngkatan[tahunMasuk] >= 4) {
-      continue;
+  // Group Mahasiswa by tahun_masuk
+  for (const mahasiswa of allMahasiswa) {
+    const { nim, tahun_angkatan } = mahasiswa;
+
+    // Select a random Dosen from the assigned Dosen for this tahun_masuk
+    const randomDosen = faker.helpers.arrayElement(
+      dosenPerAngkatan[tahun_angkatan]
+    );
+
+    // Determine status based on tahun_angkatan
+    let status = "Aktif";
+    if (tahun_angkatan <= 2020) {
+      status = faker.helpers.arrayElement(["Aktif", "Tidak Aktif"]);
     }
-
-    const randomDosen = faker.helpers.arrayElement(allDosen);
-    const status = faker.helpers.arrayElement(["Progress", "Selesai"]);
 
     // Check if a BimbinganAkademik record already exists for the current nim
     const existingRecord = await prisma.bimbinganAkademik.findUnique({
-      where: { nim: allMahasiswa[i].nim },
+      where: { nim: nim },
     });
 
     if (!existingRecord) {
       let tahunSelesai = null;
-      if (status === "Selesai") {
-        if (tahunMasuk === 2019) {
-          tahunSelesai = tahunMasuk + 4; // Fixed +4 for 2019 entries
-        } else {
-          tahunSelesai = tahunMasuk + faker.number.int({ min: 4, max: 5 }); // +4 or +5 for other entries
+      if (status === "Tidak Aktif") {
+        if (tahun_angkatan === 2019) {
+          tahunSelesai = tahun_angkatan + faker.number.int({ min: 4, max: 5 });
+        } else if (tahun_angkatan === 2020) {
+          tahunSelesai = tahun_angkatan + 4;
         }
       }
 
       await prisma.bimbinganAkademik.create({
         data: {
-          id_dosen: randomDosen.id,
-          nim: allMahasiswa[i].nim,
-          tahun_masuk: tahunMasuk,
+          id_dosen: randomDosen,
+          nim: nim,
+          tahun_masuk: tahun_angkatan,
           tahun_selesai: tahunSelesai,
           status: status,
         },
       });
-
-      // Increment the counter for the current tahunMasuk
-      dosenPerAngkatan[tahunMasuk]++;
     }
   }
 };
