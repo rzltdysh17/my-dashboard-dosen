@@ -189,6 +189,10 @@
     "@prisma/engines-version" "5.19.1-2.69d742ee20b815d88e17e54db4a2a7a3b30324e3"
     "@prisma/fetch-engine" "5.19.1"
     "@prisma/get-platform" "5.19.1"
+    "@prisma/debug" "5.19.1"
+    "@prisma/engines-version" "5.19.1-2.69d742ee20b815d88e17e54db4a2a7a3b30324e3"
+    "@prisma/fetch-engine" "5.19.1"
+    "@prisma/get-platform" "5.19.1"
 
 "@prisma/fetch-engine@5.19.1":
   version "5.19.1"
@@ -198,12 +202,16 @@
     "@prisma/debug" "5.19.1"
     "@prisma/engines-version" "5.19.1-2.69d742ee20b815d88e17e54db4a2a7a3b30324e3"
     "@prisma/get-platform" "5.19.1"
+    "@prisma/debug" "5.19.1"
+    "@prisma/engines-version" "5.19.1-2.69d742ee20b815d88e17e54db4a2a7a3b30324e3"
+    "@prisma/get-platform" "5.19.1"
 
 "@prisma/get-platform@5.19.1":
   version "5.19.1"
   resolved "https://registry.npmjs.org/@prisma/get-platform/-/get-platform-5.19.1.tgz"
   integrity sha512-sCeoJ+7yt0UjnR+AXZL7vXlg5eNxaFOwC23h0KvW1YIXUoa7+W2ZcAUhoEQBmJTW4GrFqCuZ8YSP0mkDa4k3Zg==
   dependencies:
+    "@prisma/debug" "5.19.1"
     "@prisma/debug" "5.19.1"
 
 "@rushstack/eslint-patch@^1.3.3":
@@ -2198,6 +2206,9 @@ prisma@*, prisma@^5.19.1:
   resolved "https://registry.npmjs.org/prisma/-/prisma-5.19.1.tgz"
   integrity sha512-c5K9MiDaa+VAAyh1OiYk76PXOme9s3E992D7kvvIOhCrNsBQfy2mP2QAQtX0WNj140IgG++12kwZpYB9iIydNQ==
   dependencies:
+    "@prisma/engines" "5.19.1"
+  optionalDependencies:
+    fsevents "2.3.3"
     "@prisma/engines" "5.19.1"
   optionalDependencies:
     fsevents "2.3.3"
