@@ -205,7 +205,7 @@ const dummyBimbinganAkademik = async () => {
   const allMahasiswa = await prisma.mahasiswa.findMany({
     select: {
       nim: true,
-      tahun_angkatan: true, // Assuming `tahun_masuk` is a field in the `mahasiswa` table
+      tahun_angkatan: true,
     },
   });
 
@@ -213,34 +213,28 @@ const dummyBimbinganAkademik = async () => {
     throw new Error("No Mahasiswa found to create Bimbingan Akademik entries");
   }
 
-  // Object to store 4 Dosen per tahun angkatan
+  // Object to store 4 Dosen per tahun angkatan, retained for all years
   const dosenPerAngkatan: { [key: number]: number[] } = {};
+  let assignedDosen = faker.helpers
+    .arrayElements(allDosen, 4)
+    .map((dosen) => dosen.id);
 
-  // Assign 4 random Dosen for each tahun angkatan
+  // Use the same 4 Dosen for each tahun angkatan
   for (const tahunMasuk of [2019, 2020, 2021, 2022, 2023]) {
-    if (!dosenPerAngkatan[tahunMasuk]) {
-      dosenPerAngkatan[tahunMasuk] = faker.helpers
-        .arrayElements(allDosen, 4)
-        .map((dosen) => dosen.id);
-    }
+    dosenPerAngkatan[tahunMasuk] = assignedDosen;
   }
 
-  // Group Mahasiswa by tahun_masuk
+  // Assign Bimbingan to each Mahasiswa
   for (const mahasiswa of allMahasiswa) {
     const { nim, tahun_angkatan } = mahasiswa;
-
-    // Select a random Dosen from the assigned Dosen for this tahun_masuk
     const randomDosen = faker.helpers.arrayElement(
       dosenPerAngkatan[tahun_angkatan]
     );
-
-    // Determine status based on tahun_angkatan
     let status = "Aktif";
     if (tahun_angkatan <= 2020) {
       status = faker.helpers.arrayElement(["Aktif", "Tidak Aktif"]);
     }
 
-    // Check if a BimbinganAkademik record already exists for the current nim
     const existingRecord = await prisma.bimbinganAkademik.findUnique({
       where: { nim: nim },
     });
@@ -248,11 +242,7 @@ const dummyBimbinganAkademik = async () => {
     if (!existingRecord) {
       let tahunSelesai = null;
       if (status === "Tidak Aktif") {
-        if (tahun_angkatan === 2019) {
-          tahunSelesai = tahun_angkatan + faker.number.int({ min: 4, max: 5 });
-        } else if (tahun_angkatan === 2020) {
-          tahunSelesai = tahun_angkatan + 4;
-        }
+        tahunSelesai = tahun_angkatan + (tahun_angkatan === 2019 ? 5 : 4);
       }
 
       await prisma.bimbinganAkademik.create({
