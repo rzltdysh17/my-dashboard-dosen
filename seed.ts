@@ -242,7 +242,7 @@ const dummyBimbinganAkademik = async () => {
     if (!existingRecord) {
       let tahunSelesai = null;
       if (status === "Tidak Aktif") {
-        tahunSelesai = tahun_angkatan + (tahun_angkatan === 2019 ? 5 : 4);
+        tahunSelesai = tahun_angkatan + (tahun_angkatan === 2019 || 2020 ? 5 : 4);
       }
 
       await prisma.bimbinganAkademik.create({
